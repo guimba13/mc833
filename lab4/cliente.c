@@ -16,8 +16,9 @@ int main(int argc, char **argv) {
     int    sockfd, n;
     char   recvline[MAXLINE + 1];
     char   error[MAXLINE + 1];
+    char   msg[1000];
     struct sockaddr_in servaddr, _local, _remote;
-    
+
     // Verifica o argumento passada para o cliente pela entrada padrao
     if (argc != 2) {
         strcpy(error,"uso: ");
@@ -26,13 +27,13 @@ int main(int argc, char **argv) {
         perror(error);
         exit(1);
     }
-    
+
     // Pega o socket para ser realizado a conexao
     if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("socket error");
         exit(1);
     }
-    
+
     // Inicializa a variaevel de endereço do servidor
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
@@ -42,13 +43,13 @@ int main(int argc, char **argv) {
         perror("inet_pton error");
         exit(1);
     }
-    
+
     // Realiza a conexao com o servidor
     if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
         perror("connect error");
         exit(1);
     }
-    
+
     // Chama a função getsockname para pegar o endereço ip e porta do socket local
     bzero(&_local, sizeof(_local));
     socklen_t len = sizeof(_local);
@@ -56,20 +57,27 @@ int main(int argc, char **argv) {
         perror("getsockname() failed");
         return -1;
     }
-    
+
     printf("IP SOCKET LOCAL: %s\nPORT SOCKET LOCAL: %d\n", inet_ntoa(_local.sin_addr), ntohs(_local.sin_port));
-    
+
     // Troca de mensagens com o servidor
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
         recvline[n] = 0;
-        
+
         socklen_t lenRemote = sizeof(_remote);
         if (getpeername(sockfd, (struct sockaddr *) &_remote, &lenRemote) == -1) {
             perror("getpeername() failed hard");
             return -1;
         }
-        printf("\nIP SOCKET REMOTO: %s\nPORT SOCKET REMOTO: %d\n", inet_ntoa(_remote.sin_addr), ntohs(_remote.sin_port));
-        
+        //printf("\nIP SOCKET REMOTO: %s\nPORT SOCKET REMOTO: %d\n", inet_ntoa(_remote.sin_addr), ntohs(_remote.sin_port));
+
+        // Le a entrada padrao
+        fgets(msg, 1000, stdin);
+        if (send(sockfd, msg, strlen(msg), 0) < 0) {
+          puts("Send failed.");
+          return 1;
+        }
+        fflush(stdin);
         // Escreve na saida padrao a informacao obtida do servidor
         if (fputs(recvline, stdout) == EOF) {
             perror("fputs error");
@@ -81,6 +89,6 @@ int main(int argc, char **argv) {
         perror("read error");
         exit(1);
     }
-    
+
     exit(0);
 }

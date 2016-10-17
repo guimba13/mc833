@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <string.h>
 
 
 #define LISTENQ 10
@@ -57,13 +58,13 @@ int main (int argc, char **argv) {
       inet_ntop(AF_INET, &(_self.sin_addr), str, INET_ADDRSTRLEN);
       //chama a função getpeername para pegar o endereço ip e porta do socket remoto
       printf("IP SOCKET REMOTO: %s\nPORT SOCKET REMOTO: %d\n", str, ntohs(_self.sin_port));
-      
+
       pthread_t thread;
       new_sock = malloc(1);
       *new_sock = connfd;
       if (pthread_create(&thread, NULL, connection_handler, (void*) new_sock) < 0) {
-		perror("Could not create thread");
-		exit(1);  
+		      perror("Could not create thread");
+		      exit(1);
       }
       pthread_join(thread , NULL);
    }
@@ -72,15 +73,19 @@ int main (int argc, char **argv) {
 
 void *connection_handler(void* socket_desc) {
 	int sock = *(int*)socket_desc, read_size;
-	char message[2000];
+	char message[2000], *msg;
 	char   buf[MAXDATASIZE];
+  strcpy(msg, "Greetings! I am your connection handler\n");
+  write(sock , msg , strlen(msg));
+  snprintf(buf, sizeof(buf), "%s\n", msg);
 	while( (read_size = recv(sock , message , 2000 , 0)) > 0 )
     {
+        puts("teste");
         //Send the message back to client
         write(sock , message , strlen(message));
         snprintf(buf, sizeof(buf), "%s\n", message);
-    }	
-	
+    }
+
 	if(read_size == 0)
     {
         puts("Client disconnected");
@@ -93,6 +98,6 @@ void *connection_handler(void* socket_desc) {
 
 	// Fecha a conexao com o servidor
 	free(socket_desc);
-	
+
 	return 0;
 }
