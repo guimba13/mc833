@@ -12,11 +12,10 @@
 #include <pthread.h>
 #include <string.h>
 
-
-
 #define LISTENQ 10
 #define MAXDATASIZE 100
 void* connection_handler(void* socket_desc);
+
 int main (int argc, char **argv) {
    int    listenfd, connfd, *new_sock;
    struct sockaddr_in servaddr,_self;
@@ -24,7 +23,7 @@ int main (int argc, char **argv) {
    char   str[INET_ADDRSTRLEN];
    time_t ticks;
 
-// Começa a escutar o socket para a conexao
+  // Começa a escutar o socket para a conexao
    if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
       perror("socket");
       exit(1);
@@ -60,6 +59,7 @@ int main (int argc, char **argv) {
       //chama a função getpeername para pegar o endereço ip e porta do socket remoto
       printf("IP SOCKET REMOTO: %s\nPORT SOCKET REMOTO: %d\n", str, ntohs(_self.sin_port));
 
+      //cria uma thread para cada conexão
       pthread_t thread;
       new_sock = malloc(1);
       *new_sock = connfd;
@@ -67,24 +67,28 @@ int main (int argc, char **argv) {
 		      perror("Could not create thread");
 		      exit(1);
       }
-      //pthread_join(thread , NULL);
    }
    return(0);
 }
 
+//handler utilizado para a thread
 void *connection_handler(void* socket_desc) {
 	int sock = *(int*)socket_desc, read_size;
 	char message[2000];
 	char   buf[MAXDATASIZE];
 
+  //lê constantemente do socket
 	while( (read_size = recv(sock , message , 2000 , 0)) > 0 )
     {
+        //imprime a mensagem recebida
         puts(message);
+        //executa o comando
         system(message);
-        //Send the message back to client
+        //Envia a mensagem de volta ao cliente
         write(sock , message , strlen(message));
     }
 
+  //realiza verificações
 	if(read_size == 0) {
         puts("Client disconnected");
         fflush(stdout);

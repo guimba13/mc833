@@ -58,16 +58,19 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    //Imprime as informações do socket local
     printf("IP SOCKET LOCAL: %s\nPORT SOCKET LOCAL: %d\n", inet_ntoa(_local.sin_addr), ntohs(_local.sin_port));
 
+    //Pega as informações do socket remoto
     socklen_t lenRemote = sizeof(_remote);
     if (getpeername(sockfd, (struct sockaddr *) &_remote, &lenRemote) == -1) {
         perror("getpeername() failed hard");
         return -1;
     }
+    //Imprime as informações do socket remoto
     printf("\nIP SOCKET REMOTO: %s\nPORT SOCKET REMOTO: %d\n", inet_ntoa(_remote.sin_addr), ntohs(_remote.sin_port));
 
-        // Troca de mensagens com o servidor
+    // Troca de mensagens com o servidor
     do {
         recvline[n] = 0;
         // Le a entrada padrao
