@@ -58,9 +58,9 @@ int main (int argc, char **argv) {
     inet_ntop(AF_INET, &(_self.sin_addr), str, INET_ADDRSTRLEN);
     
 
-    //chama a função getpeername para pegar o endereço ip e porta do socket remoto
+    //LOGA EM UM ARQUIVO O INSTANTE DE CONEXÃO DE UM CLIENTE
     FILE *f;
-    f = fopen("connection.log", "a+"); // a+ (create + append) option will allow appending which is useful in a log file
+    f = fopen("connection.log", "a+"); 
     if (f == NULL) { 
       puts("Something went wrong writing log!");
     }else{
@@ -107,6 +107,7 @@ void *connection_handler(void* socket_desc) {
 
     socklen_t lenS = sizeof(_loopId);
 
+    //PEGA AS INFORMAÇÕES DO SOCKET DO CLIENTE PARA IDENTIFICAR QUEM ENVIOU CADA COMANDO
     if (getpeername(sock, (struct sockaddr *)&_loopId, &lenS) == -1)
       perror("getsockname");
     else{
@@ -114,6 +115,7 @@ void *connection_handler(void* socket_desc) {
       printf("IP: %s | PORT: %d | %s\n", str, ntohs(_loopId.sin_port), message);
     }
 
+    //EXECUTA A CHAMADA DE SISTEMA E COPIA A RESPOSTA PRA UM BUFFER
     FILE *f;
     if (NULL == (f = popen(message, "r"))) {
       perror("popen");
@@ -122,23 +124,25 @@ void *connection_handler(void* socket_desc) {
 
     while (fgets(buffer, sizeof(buffer), f) != NULL) {
       strlength = strlen(buffer);
-      temp = realloc(response, size + strlength);  // allocate room for the buffer that gets appended
+      temp = realloc(response, size + strlength);  
       if (temp == NULL) {
         // allocation error
       } else {
         response = temp;
       }
-      strcpy(response + size - 1, buffer);     // append buffer to str
+      strcpy(response + size - 1, buffer);     
       size += strlength; 
     }
     pclose(f);
 
-    //Envia a mensagem de volta ao cliente
+    //Envia a resposta da execução do comando de volta ao cliente
     write(sock , response , strlen(response));
   }
 
   //realiza verificações
   if(read_size == 0) {
+
+    //Pega as informações do socket do cliente para informar quem foi desconectado
     socklen_t lenS = sizeof(_loopId);
     if (getpeername(sock, (struct sockaddr *)&_loopId, &lenS) == -1)
       perror("getsockname");
@@ -147,6 +151,7 @@ void *connection_handler(void* socket_desc) {
       printf("Client disconnected - IP: %s | PORT: %d | ", str, ntohs(_loopId.sin_port));
     }
 
+    //SALVA NO ARQUIVO DE LOG AS INFORMAÇÕES DE QUEM FOI DESCONECTADO
     FILE *f;
     f = fopen("connection.log", "a+"); // a+ (create + append) option will allow appending which is useful in a log file
     if (f == NULL) { 
