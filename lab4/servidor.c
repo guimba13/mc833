@@ -18,7 +18,7 @@ void* connection_handler(void* socket_desc);
 
 int main (int argc, char **argv) {
   int    listenfd, connfd, *new_sock;
-  struct sockaddr_in servaddr,_self;
+  struct sockaddr_in servaddr,_self, _loopId;
   char   buf[MAXDATASIZE];
   char   str[INET_ADDRSTRLEN];
   time_t ticks;
@@ -56,9 +56,25 @@ int main (int argc, char **argv) {
       exit(1);
     }
     inet_ntop(AF_INET, &(_self.sin_addr), str, INET_ADDRSTRLEN);
-    //chama a função getpeername para pegar o endereço ip e porta do socket remoto
-    printf("IP SOCKET REMOTO: %s\nPORT SOCKET REMOTO: %d\n", str, ntohs(_self.sin_port));
+    
 
+    //chama a função getpeername para pegar o endereço ip e porta do socket remoto
+    FILE *f;
+    f = fopen("connection.log", "a+"); // a+ (create + append) option will allow appending which is useful in a log file
+    if (f == NULL) { 
+      puts("Something went wrong writing log!");
+    }else{
+      time_t rawtime;
+      struct tm * timeinfo;
+
+      time ( &rawtime );
+      timeinfo = localtime ( &rawtime );
+    
+      fprintf(f, "%sCONNECTION - IP : %s | PORT : %d\n",asctime (timeinfo), str, ntohs(_self.sin_port));  
+    }
+    fclose(f);
+    
+    
     //cria uma thread para cada conexão
     pthread_t thread;
     new_sock = malloc(1);
@@ -75,11 +91,22 @@ int main (int argc, char **argv) {
 void *connection_handler(void* socket_desc) {
   int sock = *(int*)socket_desc, read_size;
   char message[2000];
+  struct sockaddr_in _loopId;
+  char   str[INET_ADDRSTRLEN];
   char   buf[MAXDATASIZE];
 
   //lê constantemente do socket
   while( (read_size = recv(sock , message , 2000 , 0)) > 0 )
   {
+
+    socklen_t lenS = sizeof(_loopId);
+
+    if (getsockname(sock, (struct sockaddr *)&_loopId, &lenS) == -1)
+      perror("getsockname");
+    else{
+      inet_ntop(AF_INET, &(_loopId.sin_addr), str, INET_ADDRSTRLEN);
+      printf("IP: %s | PORT: %d | ", str, ntohs(_loopId.sin_port));
+    }
     //imprime a mensagem recebida
     puts(message);
     //executa o comando
@@ -90,7 +117,29 @@ void *connection_handler(void* socket_desc) {
 
   //realiza verificações
   if(read_size == 0) {
-    puts("Client disconnected");
+    socklen_t lenS = sizeof(_loopId);
+    if (getsockname(sock, (struct sockaddr *)&_loopId, &lenS) == -1)
+      perror("getsockname");
+    else{
+      inet_ntop(AF_INET, &(_loopId.sin_addr), str, INET_ADDRSTRLEN);
+      printf("Client disconnected - IP: %s | PORT: %d | ", str, ntohs(_loopId.sin_port));
+    }
+
+    FILE *f;
+    f = fopen("connection.log", "a+"); // a+ (create + append) option will allow appending which is useful in a log file
+    if (f == NULL) { 
+      puts("Something went wrong writing log!");
+    }else{
+      time_t rawtime;
+      struct tm * timeinfo;
+
+      time ( &rawtime );
+      timeinfo = localtime ( &rawtime );
+      
+      fprintf(f, "%sDESCONECTION - IP : %s | PORT : %d\n",asctime (timeinfo), str, ntohs(_loopId.sin_port));  
+    }
+    fclose(f);
+  
     fflush(stdout);
   }
   else if(read_size == -1)

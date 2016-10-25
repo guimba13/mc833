@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 
   // Troca de mensagens com o servidor
   do {
-    recvline[n] = 0;
+    //recvline[n] = 0;
     // Le a entrada padrao
     fgets(msg, sizeof(msg), stdin);
     if (strcmp("exit\n", msg) == 0 || strcmp("quit\n", msg) == 0
