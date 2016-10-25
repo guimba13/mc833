@@ -95,30 +95,52 @@ void *connection_handler(void* socket_desc) {
   char   str[INET_ADDRSTRLEN];
   char   buf[MAXDATASIZE];
 
+  char buffer[1000];
+  char *response = NULL;
+  char *temp = NULL;
+  unsigned int size = 1;  // start with size of 1 to make room for null terminator
+  unsigned int strlength;
+
   //lê constantemente do socket
   while( (read_size = recv(sock , message , 2000 , 0)) > 0 )
   {
 
     socklen_t lenS = sizeof(_loopId);
 
-    if (getsockname(sock, (struct sockaddr *)&_loopId, &lenS) == -1)
+    if (getpeername(sock, (struct sockaddr *)&_loopId, &lenS) == -1)
       perror("getsockname");
     else{
       inet_ntop(AF_INET, &(_loopId.sin_addr), str, INET_ADDRSTRLEN);
-      printf("IP: %s | PORT: %d | ", str, ntohs(_loopId.sin_port));
+      printf("IP: %s | PORT: %d | %s\n", str, ntohs(_loopId.sin_port), message);
     }
-    //imprime a mensagem recebida
-    puts(message);
-    //executa o comando
-    system(message);
+
+    FILE *f;
+    if (NULL == (f = popen(message, "r"))) {
+      perror("popen");
+      exit(EXIT_FAILURE);
+    }
+
+    while (fgets(buffer, sizeof(buffer), f) != NULL) {
+      strlength = strlen(buffer);
+      temp = realloc(response, size + strlength);  // allocate room for the buffer that gets appended
+      if (temp == NULL) {
+        // allocation error
+      } else {
+        response = temp;
+      }
+      strcpy(response + size - 1, buffer);     // append buffer to str
+      size += strlength; 
+    }
+    pclose(f);
+
     //Envia a mensagem de volta ao cliente
-    write(sock , message , strlen(message));
+    write(sock , response , strlen(response));
   }
 
   //realiza verificações
   if(read_size == 0) {
     socklen_t lenS = sizeof(_loopId);
-    if (getsockname(sock, (struct sockaddr *)&_loopId, &lenS) == -1)
+    if (getpeername(sock, (struct sockaddr *)&_loopId, &lenS) == -1)
       perror("getsockname");
     else{
       inet_ntop(AF_INET, &(_loopId.sin_addr), str, INET_ADDRSTRLEN);
